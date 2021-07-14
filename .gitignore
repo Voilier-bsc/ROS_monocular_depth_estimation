@@ -51,3 +51,4 @@ qtcreator-*
 CATKIN_IGNORE
 
 bts_eigen_v2_pytorch_densenet121/*
+yolo/*
