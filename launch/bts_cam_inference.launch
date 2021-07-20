@@ -1,4 +1,0 @@
-<launch>
-  <node name="bts_cam_inference" pkg="bts_cam_inference" type="bts_cam_inference">
-  </node>
-</launch>

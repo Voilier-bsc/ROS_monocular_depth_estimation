@@ -1,0 +1,11 @@
+<launch>
+    <node pkg = "ROS_monocular_depth_estimation" type = "ROS_monocular_depth_estimation.py" name="ROS_monocular_depth_estimation"/>
+    <node name="image_view1" pkg="image_view" type="image_view" respawn="false" output="screen">
+    <param name="autosize" value="true" />
+    <remap from="image" to="bts_depth_img" />
+    </node>
+    <node name="image_view2" pkg="image_view" type="image_view" respawn="false" output="screen">
+    <remap from="image" to="bts_yolo_img" />
+    <param name="autosize" value="true" />
+    </node>
+</launch>

@@ -115,11 +115,12 @@ def inference(frame):
             # Predict
             _, _, _, _, depth_est = model(image, focal)
             depth_est = depth_est.cpu().numpy().squeeze()
-    # pred_depth_scaled = depth_est * 1000
+    depth_img = depth_est * 1000
+    depth_img = depth_img.astype(np.uint16)
     pred_depth_scaled = depth_est
     pred_depth_scaled = pred_depth_scaled.astype(np.uint16)
 
-    return pred_depth_scaled
+    return pred_depth_scaled , depth_img
 
 class yolo():
     def __init__(self):
@@ -269,8 +270,8 @@ def Image_to_opencv(msg):
     cv_image = cvb.imgmsg_to_cv2(msg,"bgr8")
 
     input_img = cv_image.copy()
-    depth_img = inference(input_img)
-    img_yolo = yolo.infer(input_img, depth_img)
+    real_depth, depth_img = inference(input_img)
+    img_yolo = yolo.infer(input_img, real_depth)
 
     img_pub1 = rospy.Publisher("bts_depth_img", Image, queue_size=1)
     img_pub1.publish(cvb.cv2_to_imgmsg(depth_img, "mono16"))
