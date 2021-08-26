@@ -1,0 +1,21 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/cordin/catkin_ws/devel/include/**",
+        "/home/cordin/cvbridge_build_ws/install/include/**",
+        "/opt/ros/melodic/include/**",
+        "/home/cordin/catkin_ws/src/ros_tutorials_action/include/**",
+        "/home/cordin/catkin_ws/src/ros_tutorials_service/include/**",
+        "/home/cordin/catkin_ws/src/ros_tutorials_topic/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS"
+    }
+  ],
+  "version": 4
+}

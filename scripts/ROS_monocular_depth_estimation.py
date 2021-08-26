@@ -9,21 +9,21 @@ import types
 import rospy
 import cv2
 from sensor_msgs.msg import Image
-from cv_bridge import CvBridge, CvBridgeError
-from cv_bridge.boost.cv_bridge_boost import getCvType
+from cv_bridge import CvBridge
 import torch
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 import torch.utils.data.distributed
 from torchvision import transforms
 import random
+
 sys.path.insert(0, '/home/cordin/catkin_ws/src/ROS_monocular_depth_estimation')
+sys.path.insert(0, '/home/cordin/catkin_ws/src/ROS_monocular_depth_estimation/bts_eigen_v2_pytorch_densenet121')
 
 from yolo.util import *
 from yolo.darknet import Darknet
 import pickle as pkl
 
-sys.path.insert(0, '/home/cordin/catkin_ws/src/ROS_monocular_depth_estimation/bts_eigen_v2_pytorch_densenet121')
 
 
 args = types.SimpleNamespace()
@@ -33,7 +33,7 @@ args.checkpoint_path    = '/home/cordin/catkin_ws/src/ROS_monocular_depth_estima
 args.max_depth          = 80
 args.input_height       = 480
 args.input_width        = 640
-args.do_kb_crop         = False
+args.do_kb_crop         = True
 args.bts_size           = 512
 args.dataset            = 'kitti'
 
@@ -46,7 +46,7 @@ for key, val in vars(__import__(args.model_name)).items():
     vars()[key] = val
 
 model = BtsModel(params=args)
-model = torch.nn.DataParallel(model)
+model = torch.nn.DataParallel(model,device_ids=[0])
 
 checkpoint = torch.load(args.checkpoint_path)
 model.load_state_dict(checkpoint['model'])
@@ -130,7 +130,6 @@ class yolo():
     def load_network(self, ):
         model = Darknet(self.cfgfile)
         model.load_weights(self.weightsfile)
-        print("Network successfully loaded")
         model.net_info["height"] = self.reso
         inp_dim = int(model.net_info["height"])
         assert inp_dim % 32 == 0
@@ -264,14 +263,24 @@ class yolo():
         cv2.putText(img, "depth: {:.2f} m".format(dist), (int(center[1]), int(center[0])+t_size[1]+4), cv2.FONT_HERSHEY_PLAIN, 1, [225, 255, 255], 1)
 
 def Image_to_opencv(msg):
-    start_time = time.time()
+    
     torch.cuda.empty_cache()
     cvb=CvBridge()
     cv_image = cvb.imgmsg_to_cv2(msg,"bgr8")
 
     input_img = cv_image.copy()
+
+    start_time = time.time()
+
     real_depth, depth_img = inference(input_img)
+
+    elapsed_time = time.time() - start_time
+    yolo_start_time = time.time()
+    print('bts inference time: %s' % str(elapsed_time))
+
     img_yolo = yolo.infer(input_img, real_depth)
+    elapsed_time2 = time.time() - yolo_start_time
+    print('yolo inference time: %s' % str(elapsed_time))
 
     img_pub1 = rospy.Publisher("bts_depth_img", Image, queue_size=1)
     img_pub1.publish(cvb.cv2_to_imgmsg(depth_img, "mono16"))
@@ -279,8 +288,9 @@ def Image_to_opencv(msg):
     img_pub2 = rospy.Publisher("bts_yolo_img", Image, queue_size=1)
     img_pub2.publish(cvb.cv2_to_imgmsg(img_yolo, "bgr8"))
 
-    elapsed_time = time.time() - start_time
-    print('Elapesed time: %s' % str(elapsed_time))
+    img_pub3 = rospy.Publisher("bts_original_img", Image, queue_size=1)
+    img_pub3.publish(cvb.cv2_to_imgmsg(cv_image, "bgr8"))
+
 
 
 if __name__ == '__main__':
